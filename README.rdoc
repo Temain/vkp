@@ -1,0 +1,6 @@
+= vkp
+
+Describe your project here
+
+:include:vkp.rdoc
+

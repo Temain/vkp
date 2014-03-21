@@ -2,6 +2,7 @@
 require 'gli'
 begin # XXX: Remove this begin/rescue before distributing your app
 require 'vkp'
+require 'terminal-table'
 rescue LoadError
   STDERR.puts "In development, you need to use `bundle exec bin/vkp` to run your app"
   STDERR.puts "At install-time, RubyGems will make sure lib, etc. are in the load path"
@@ -11,17 +12,63 @@ end
 
 include GLI::App
 
-program_desc 'Describe your application here'
+program_desc 'Application for playing vk music'
 
 version Vkp::VERSION
 
-desc 'Describe some switch here'
-switch [:s,:switch]
+# desc 'Describe some switch here'
+# switch [:s,:switch]
+# 
+# desc 'Describe some flag here'
+# default_value 'the default'
+# arg_name 'The name of the argument'
+# flag [:f,:flagname]
 
-desc 'Describe some flag here'
-default_value 'the default'
-arg_name 'The name of the argument'
-flag [:f,:flagname]
+command :list do |c|
+  c.default_value "table"
+  c.switch [:f, :format] # table view or list view
+  
+  c.action do |global_options, options, args| 
+    c.desc 'Show list of audios'
+    
+    puts "\e[H\e[2J" # clear terminal
+    audios = @player.list_audios  
+    if options[:format] == "table"
+      table = Terminal::Table.new do |t|
+        t.title = "Music(Page: 1 of ...)"
+        t.headings = ['#', 'Title']
+        audios.each_with_index do |audio, index|
+          t << [ index, "#{audio['title'].strip}" ] unless index == 0         
+        end
+      end
+      puts table
+    end
+  end
+  
+end
+
+command :play do |c|
+  c.action do |global_options, options, args|
+    c.desc 'Play audio'
+    @player.download_and_play args[0].to_i
+  end
+end
+
+command :download do |c|
+  c.action do |global_options, options, args|
+    @player.download
+  end
+end
+
+command :search do |c|
+  c.action do |global_options, options, args|
+  end
+end
+
+command :show do |c|
+  c.action do |global_options, options, args|
+  end
+end
 
 pre do |global,command,options,args|
   # Pre logic here
@@ -29,6 +76,7 @@ pre do |global,command,options,args|
   # chosen command
   # Use skips_pre before a command to skip this block
   # on that command only
+  @player = VkontaktePlayer.new
   true
 end
 

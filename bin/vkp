@@ -16,7 +16,7 @@ program_desc 'Describe your application here'
 version Vkp::VERSION
 
 desc 'Describe some switch here'
-switch [:s,:switch]
+switch [:s,:switch]R
 
 desc 'Describe some flag here'
 default_value 'the default'

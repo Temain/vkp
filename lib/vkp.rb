@@ -6,6 +6,7 @@ require 'openssl'
 require 'nokogiri'
 require 'httpclient'
 require 'json'
+require 'timers'
 
 # Add requires for other files you add to your project here, so
 # you just need to require this one file in your bin file
@@ -22,12 +23,12 @@ class VkontaktePlayer
   end
   
   def authorize(email = nil, pass = nil)
-    email ||= config['vk']['user']['email']
-    pass  ||= config['vk']['user']['pass']
+    email   ||= config['vk']['user']['email']
+    pass    ||= config['vk']['user']['pass']
+    client_id = config['vk']['client']
     
-    puts "Authorize in vk..."
     response = @http.get 'https://oauth.vk.com/authorize', 
-            { :client_id     => 3537610, 
+            { :client_id     => client_id, 
               :scope         => 'audio',
     			    :display       => 'wap', 
               :response_type => 'token', 
@@ -47,8 +48,59 @@ class VkontaktePlayer
     # Get accees_token from last response
     url_with_access_token = grant_access_request.headers['Location']
     @access_token         = url_with_access_token[/#.+&/].tr_s('#','').split('&').first
-  rescue Exception => e
-    puts e.message
+  # rescue Exception => e
+ #    puts e.message
+  end
+  
+  def list_audios(count = 16)
+    @access_token ||= authorize
+    vk_api   = config['vk']['api']
+    user_id  = config['vk']['user']['id']
+    response = @http.get "#{vk_api}audio.get?owner_id=#{user_id.to_s}&count=#{count}&#{@access_token}"
+    audios   = JSON.parse(response.body)
+    audios["response"]
+  end
+  
+  def download(index = 1)
+    audio    = list_audios[index] 
+    response = @http.head audio['url']
+    content_length = response.header['Content-Length'][0].to_f
+    file     = File.open("tmp/#{audio['title']}.mp3","w+")
+    
+    sum_chunks = 0
+    puts "Download file '#{audio['title']}.mp3' started..."
+    @http.get_content(audio['url']) do |chunk|
+      file.write(chunk)
+      sum_chunks += chunk.size
+      progress = (sum_chunks/content_length * 100).to_i
+      print_string  = "\r[" + '#'* (progress/2) + '-' * (50 - progress/2) + "]#{progress}%"
+      print print_string
+    end
+    puts "\nFile '#{audio['title']}.mp3' has been downloaded."
+  end
+  
+  def play(index = 1)
+    audio = list_audios[index]  
+    %x( afplay "tmp/#{audio['title']}.mp3" )
+  end
+  
+  def download_and_play(index = 1)
+    threads = []
+    # title_thread = Thread.new {
+    #   timers = Timers.new
+    #   every_second_timer = timers.every(1) { print "Take a second\r" }
+    #   loop { timers.wait }
+    # }
+    http_thread = Thread.new {
+      download(index)
+    }
+    audio_thread = Thread.new {
+      sleep(5.0)
+      play(index)
+    }
+    threads << http_thread
+    threads << audio_thread
+    threads.each { |thread| thread.join }
   end
   
 end

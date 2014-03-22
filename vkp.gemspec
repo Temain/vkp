@@ -22,4 +22,6 @@ spec = Gem::Specification.new do |s|
   s.add_runtime_dependency('gli','2.9.0')
   s.add_runtime_dependency('nokogiri')
   s.add_runtime_dependency('httpclient')
+  s.add_runtime_dependency('terminal-table')
+  s.add_runtime_dependency('timers')
 end

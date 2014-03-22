@@ -1,6 +1,8 @@
 *.gem
 *.rbc
 config.yml
+/tmp/*.*
+.DS_Store
 
 ## Documentation cache and generated files:
 /.yardoc/

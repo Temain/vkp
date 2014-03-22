@@ -59,45 +59,68 @@ class VkontaktePlayer
     audios["response"]
   end
   
-  def download(index = 1)
-    audio    = list_audios[index] 
-    response = @http.head audio['url']
+  def download(index = 1, printable = false)
+    audio          = list_audios[index] 
+    response       = @http.head audio['url']
     content_length = response.header['Content-Length'][0].to_f
-    file     = File.open("tmp/#{audio['title']}.mp3","w+")
+    file_name      = "tmp/#{audio['title']}.mp3"
     
-    sum_chunks = 0
-    puts "Download file '#{audio['title']}.mp3' started..."
-    @http.get_content(audio['url']) do |chunk|
-      file.write(chunk)
-      sum_chunks += chunk.size
-      progress = (sum_chunks/content_length * 100).to_i
-      print_string  = "\r[" + '#'* (progress/2) + '-' * (50 - progress/2) + "]#{progress}%"
-      print print_string
+    unless downloaded?(file_name, content_length)
+      file         = File.open(file_name, "w+")      
+      sum_chunks   = 0
+      puts "Download file '#{audio['title']}.mp3' started..."
+      @http.get_content(audio['url']) do |chunk|
+        file.write(chunk)
+        sum_chunks += chunk.size
+        show_progress(sum_chunks, content_length) if printable
+      end
+      # puts "\nFile '#{audio['title']}.mp3' has been downloaded."
     end
-    puts "\nFile '#{audio['title']}.mp3' has been downloaded."
+  end
+  
+  def downloaded?(file_name, content_length)
+    puts "File exists?: #{File.exist?(file_name)}"
+    # puts "File size: #{file.size}, Content-Length : #{content_length}"
+    File.exist?(file_name) && File.open(file_name, "r").size == content_length
+  end
+  
+  def show_progress(progress, total)
+    percents = (progress/total.to_f * 100).to_i
+    print "\r[" + '#'* (percents/2) + '-' * (50 - percents/2) + "]#{percents}%"
   end
   
   def play(index = 1)
-    audio = list_audios[index]  
-    %x( afplay "tmp/#{audio['title']}.mp3" )
+    threads  = []
+    audio    = list_audios[index] 
+    duration = audio['duration'] 
+    
+    audio_thread = Thread.new {
+      %x( afplay "tmp/#{audio['title']}.mp3" )
+    }
+    title_thread = Thread.new {
+      puts "Playing file '#{audio['title']}.mp3'...\n"
+      duration.times do |d|
+        show_progress d, duration
+        sleep 1
+      end
+    }
+    
+    threads << title_thread
+    threads << audio_thread
+    threads.each { |thread| thread.join } 
   end
   
   def download_and_play(index = 1)
     threads = []
-    # title_thread = Thread.new {
-    #   timers = Timers.new
-    #   every_second_timer = timers.every(1) { print "Take a second\r" }
-    #   loop { timers.wait }
-    # }
     http_thread = Thread.new {
       download(index)
     }
-    audio_thread = Thread.new {
+    play_thread = Thread.new {
       sleep(5.0)
       play(index)
     }
     threads << http_thread
-    threads << audio_thread
+    threads << play_thread
     threads.each { |thread| thread.join }
   end
   

@@ -16,21 +16,19 @@ program_desc 'Application for playing vk music'
 
 version Vkp::VERSION
 
+desc 'Show list of audios'
 command :list do |c|
   c.default_value "table"
   c.switch [:f, :format] # table view or list view
   
-  c.action do |global_options, options, args| 
-    c.desc 'Show list of audios'
-    
-    puts "\e[H\e[2J" # clear terminal
+  c.action do |global_options, options, args|   
     audios = @player.list_audios  
     if options[:format] == "table"
       table = Terminal::Table.new do |t|
         t.title = "Music(Page: 1 of ...)"
-        t.headings = ['#', 'Title']
+        t.headings = ['#', 'Title', 'Duration']
         audios.each_with_index do |audio, index|
-          t << [ index, "#{audio['title'].strip}" ] unless index == 0         
+          t << [ index, "#{audio['title'].strip}", "#{(audio['duration']/60.0).round(2)}" ] unless index == 0         
         end
       end
       puts table
@@ -39,25 +37,31 @@ command :list do |c|
   
 end
 
+desc 'Play audio'
 command :play do |c|
   c.action do |global_options, options, args|
-    c.desc 'Play audio'
     @player.download_and_play args[0].to_i
   end
 end
 
-command :download do |c|
+desc 'Download audio'
+command :download do |c| 
+  c.default_value true
+  c.switch [:p, :printable]
+
   c.action do |global_options, options, args|
-    @player.download
+    @player.download args[0].to_i, options[:printable]
   end
 end
 
+desc 'Search audio by string'
 command :search do |c|
   c.action do |global_options, options, args|
   end
 end
 
-command :show do |c|
+desc 'Show audio info'
+command :info do |c|
   c.action do |global_options, options, args|
   end
 end
@@ -68,6 +72,7 @@ pre do |global,command,options,args|
   # chosen command
   # Use skips_pre before a command to skip this block
   # on that command only
+  puts "\e[H\e[2J" # clear terminal
   @player = VkontaktePlayer.new
   true
 end
@@ -81,7 +86,8 @@ end
 on_error do |exception|
   # Error logic here
   # return false to skip default error handling
-  true
+  puts "\n"
+  false
 end
 
 exit run(ARGV)

@@ -48,8 +48,6 @@ class VkontaktePlayer
     # Get accees_token from last response
     url_with_access_token = grant_access_request.headers['Location']
     @access_token         = url_with_access_token[/#.+&/].tr_s('#','').split('&').first
-  # rescue Exception => e
- #    puts e.message
   end
   
   def list_audios(count = 16)

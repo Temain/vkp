@@ -8,9 +8,6 @@ require 'httpclient'
 require 'json'
 require 'timers'
 
-# Add requires for other files you add to your project here, so
-# you just need to require this one file in your bin file
-
 class VkontaktePlayer
   
   def initialize
@@ -50,11 +47,11 @@ class VkontaktePlayer
     @access_token         = url_with_access_token[/#.+&/].tr_s('#','').split('&').first
   end
   
-  def list_audios(count = 16)
+  def list_audios
     @access_token ||= authorize
     vk_api   = config['vk']['api']
     user_id  = config['vk']['user']['id']
-    response = @http.get "#{vk_api}audio.get?owner_id=#{user_id.to_s}&count=#{count}&#{@access_token}"
+    response = @http.get "#{vk_api}audio.get?owner_id=#{user_id.to_s}&#{@access_token}"
     audios   = JSON.parse(response.body)
     audios["response"]
   end
@@ -74,13 +71,11 @@ class VkontaktePlayer
         sum_chunks += chunk.size
         show_progress(sum_chunks, content_length) if printable
       end
-      # puts "\nFile '#{audio['title']}.mp3' has been downloaded."
     end
   end
   
   def downloaded?(file_name, content_length)
     puts "File exists?: #{File.exist?(file_name)}"
-    # puts "File size: #{file.size}, Content-Length : #{content_length}"
     File.exist?(file_name) && File.open(file_name, "r").size == content_length
   end
   
@@ -92,7 +87,7 @@ class VkontaktePlayer
   def play(index = 1)
     threads  = []
     audio    = list_audios[index] 
-    duration = audio['duration'] 
+    duration = audio['duration'] - 1
     
     audio_thread = Thread.new {
       %x( afplay "tmp/#{audio['title']}.mp3" )
@@ -116,7 +111,7 @@ class VkontaktePlayer
       download(index)
     }
     play_thread = Thread.new {
-      sleep(5.0)
+      sleep(10.0)
       play(index)
     }
     threads << http_thread

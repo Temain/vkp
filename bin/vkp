@@ -18,17 +18,33 @@ version Vkp::VERSION
 
 desc 'Show list of audios'
 command :list do |c|
-  c.default_value "table"
-  c.switch [:f, :format] # table view or list view
+  c.desc "show as table"
+  c.default_value true
+  c.switch [:table] # table view or list view
+  
+  c.desc "page number"
+  c.default_value 1
+  c.flag [:page]
+  
+  c.desc "count audios on page"
+  c.default_value 20
+  c.flag [:count]
   
   c.action do |global_options, options, args|   
-    audios = @player.list_audios  
-    if options[:format] == "table"
-      table = Terminal::Table.new do |t|
-        t.title = "Music(Page: 1 of ...)"
+    audios = @player.list_audios
+    audios.delete_at(0) # don't need
+    if options[:table]   
+      pages_count    = (audios.size/20.0).to_i + 1
+      audios_on_page = options[:count].to_i
+      page           = options[:page].to_i
+      range          = Range.new(page * audios_on_page - audios_on_page, page * audios_on_page)
+      table          = Terminal::Table.new do |t|
+        t.title = "Music(Page: #{options[:page]} of #{pages_count})"
         t.headings = ['#', 'Title', 'Duration']
         audios.each_with_index do |audio, index|
-          t << [ index, "#{audio['title'].strip}", "#{(audio['duration']/60.0).round(2)}" ] unless index == 0         
+          if range.include?(index + 1)
+            t << [ index + 1, "#{audio['title'].strip}", "#{(audio['duration']/60.0).round(2)}" ] 
+          end
         end
       end
       puts table
@@ -81,6 +97,7 @@ post do |global,command,options,args|
   # Post logic here
   # Use skips_post before a command to skip this
   # block on that command only
+  puts "\n"
 end
 
 on_error do |exception|

@@ -34,20 +34,7 @@ command :list do |c|
     audios = @player.list_audios
     audios.delete_at(0) # don't need
     if options[:table]   
-      pages_count    = (audios.size/20.0).to_i + 1
-      audios_on_page = options[:count].to_i
-      page           = options[:page].to_i
-      range          = Range.new(page * audios_on_page - audios_on_page, page * audios_on_page)
-      table          = Terminal::Table.new do |t|
-        t.title = "Music(Page: #{options[:page]} of #{pages_count})"
-        t.headings = ['#', 'Title', 'Duration']
-        audios.each_with_index do |audio, index|
-          if range.include?(index + 1)
-            t << [ index + 1, "#{audio['title'].strip}", "#{(audio['duration']/60.0).round(2)}" ] 
-          end
-        end
-      end
-      puts table
+      @player.show_as_table audios, page: options[:page], count: options[:count]
     end
   end
   
@@ -72,7 +59,26 @@ end
 
 desc 'Search audio by string'
 command :search do |c|
+  
+  c.desc "show as table"
+  c.default_value true
+  c.switch [:table] # table view or list view
+  
+  c.desc "page number"
+  c.default_value 1
+  c.flag [:page]
+  
+  c.desc "count audios on page"
+  c.default_value 20
+  c.flag [:count]
+  
   c.action do |global_options, options, args|
+    puts "Search query: '#{args[0]}'"
+    audios = @player.search args[0]
+    audios.delete_at(0) # don't need
+    if options[:table]   
+      @player.show_as_table audios, page: options[:page], count: options[:count]
+    end
   end
 end
 
@@ -104,7 +110,7 @@ on_error do |exception|
   # Error logic here
   # return false to skip default error handling
   puts "\n"
-  false
+  true
 end
 
 exit run(ARGV)

@@ -43,7 +43,7 @@ end
 desc 'Play audio'
 command :play do |c|
   c.action do |global_options, options, args|
-    @player.download_and_play args[0].to_i
+    @player.download_and_play args[0].to_i - 1
   end
 end
 
@@ -53,7 +53,7 @@ command :download do |c|
   c.switch [:p, :printable]
 
   c.action do |global_options, options, args|
-    @player.download args[0].to_i, options[:printable]
+    @player.download args[0].to_i - 1, options[:printable]
   end
 end
 
@@ -95,7 +95,7 @@ pre do |global,command,options,args|
   # Use skips_pre before a command to skip this block
   # on that command only
   puts "\e[H\e[2J" # clear terminal
-  @player = VkontaktePlayer.new
+  @player = VkontaktePlayer.deserialize
   true
 end
 
@@ -103,12 +103,14 @@ post do |global,command,options,args|
   # Post logic here
   # Use skips_post before a command to skip this
   # block on that command only
+  @player.serialize
   puts "\n"
 end
 
 on_error do |exception|
   # Error logic here
   # return false to skip default error handling
+  puts exception.backtrace
   puts "\n"
   true
 end

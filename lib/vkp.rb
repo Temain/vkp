@@ -15,6 +15,10 @@ class VkontaktePlayer
     @access_token ||= authorize
   end
   
+  def http=(http)
+    @http = http
+  end
+  
   def config     
     file_path = File.expand_path('../../config.yml', __FILE__)
     @config ||= YAML.load_file(file_path)
@@ -52,12 +56,12 @@ class VkontaktePlayer
     vk_api   = config['vk']['api']
     user_id  = config['vk']['user']['id']
     response = @http.get "#{vk_api}audio.get?owner_id=#{user_id.to_s}&#{@access_token}"
-    audios   = JSON.parse(response.body)
-    audios["response"]
+    body     = JSON.parse(response.body)
+    @audios  = body["response"]
   end
   
   def download(index = 1, printable = false)
-    audio          = list_audios[index] 
+    audio          = @audios[index] 
     response       = @http.head audio['url']
     content_length = response.header['Content-Length'][0].to_f
     file_name      = audio['title'].strip
@@ -75,11 +79,6 @@ class VkontaktePlayer
     end
   end
   
-  def downloaded?(file_path, content_length)
-    #puts "File exists?: #{File.exist?(file_name)}"
-    File.exist?(file_path) && File.open(file_path, "r").size == content_length
-  end
-  
   def show_progress(progress, total, options = { percentage: true })
     percents = (progress/total.to_f * 100).to_i
     out = "\r[" + '#'* (percents/2) + '-' * (50 - percents/2) 
@@ -95,7 +94,7 @@ class VkontaktePlayer
   
   def play(index = 1)
     threads   = []
-    audio     = list_audios[index] 
+    audio     = @audios[index] 
     duration  = audio['duration']
     file_name = audio['title'].strip
     
@@ -154,11 +153,34 @@ class VkontaktePlayer
     vk_api   = config['vk']['api']
     user_id  = config['vk']['user']['id']
     response = @http.get "#{vk_api}audio.search?q=#{query}&auto_complete=1&sort=2&#{@access_token}"
-    audios   = JSON.parse(response.body)
-    audios["response"]
+    body     = JSON.parse(response.body)
+    @audios  = body["response"]
+  end
+  
+  def to_yaml_properties
+    [:@access_token, :@audios]
+  end
+  
+  def serialize
+    data = self.to_yaml
+    File.open('tmp/store.yml', 'w') do |file|
+      file.write data
+    end
+  end
+  
+  def self.deserialize   
+    deserialized = YAML::load(File.read('tmp/store.yml'))
+    deserialized.http = HTTPClient.new
+    deserialized
+  rescue
+    VkontaktePlayer.new
   end
   
   private 
+  
+    def downloaded?(file_path, content_length)    
+      File.exist?(file_path) && File.open(file_path, "r").size == content_length
+    end
   
     def truncate(str)
       str.strip!
@@ -168,4 +190,5 @@ class VkontaktePlayer
         str
       end
     end
+    
 end

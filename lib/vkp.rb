@@ -75,27 +75,35 @@ class VkontaktePlayer
   end
   
   def downloaded?(file_name, content_length)
-    puts "File exists?: #{File.exist?(file_name)}"
+    #puts "File exists?: #{File.exist?(file_name)}"
     File.exist?(file_name) && File.open(file_name, "r").size == content_length
   end
   
-  def show_progress(progress, total)
+  def show_progress(progress, total, options = { percentage: true })
     percents = (progress/total.to_f * 100).to_i
-    print "\r[" + '#'* (percents/2) + '-' * (50 - percents/2) + "]#{percents}%"
+    out = "\r[" + '#'* (percents/2) + '-' * (50 - percents/2) 
+    out += if options[:percentage]
+      "]#{percents}%"
+    else
+      progress_time = Time.at(progress).strftime("%M:%S")
+      total_time    = Time.at(total).strftime("%M:%S")
+      "] #{ progress_time }/#{ total_time }"
+    end
+    print out
   end
   
   def play(index = 1)
     threads  = []
     audio    = list_audios[index] 
-    duration = audio['duration'] - 1
+    duration = audio['duration']
     
     audio_thread = Thread.new {
       %x( afplay "tmp/#{audio['title']}.mp3" )
     }
     title_thread = Thread.new {
       puts "Playing file '#{audio['title']}.mp3'...\n"
-      duration.times do |d|
-        show_progress d, duration
+      0.upto(duration) do |d|     
+        show_progress d, duration, percentage: false
         sleep 1
       end
     }

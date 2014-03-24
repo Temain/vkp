@@ -117,6 +117,10 @@ class VkontaktePlayer
     threads << http_thread
     threads << play_thread
     threads.each { |thread| thread.join }
+    
+    puts "\nNext file --->>"
+    index += 1
+    download_and_play index
   end
   
 end

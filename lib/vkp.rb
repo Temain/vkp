@@ -143,8 +143,9 @@ class VkontaktePlayer
       t.title = "Music(Page: #{options[:page]} of #{pages_count})"
       t.headings = ['#', 'Title', 'Duration']
       @audios.each_with_index do |audio, index|
-        if range.include?(index + 1)         
-          t << [ index + 1, "#{ truncate(audio['title']) }", "#{ (audio['duration']/60.0).round(2) }" ] 
+        if range.include?(index + 1)   
+          duration = Time.at(audio['duration']).strftime("%M:%S")      
+          t << [ index + 1, "#{ truncate(audio['title']) }", "#{ duration }" ] 
         end
       end
     end

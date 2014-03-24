@@ -58,6 +58,8 @@ class VkontaktePlayer
     response = @http.get "#{vk_api}audio.get?owner_id=#{user_id.to_s}&#{@access_token}"
     body     = JSON.parse(response.body)
     @audios  = body["response"]
+    @audios.delete_at(0) # don't need
+    @audios
   end
   
   def download(index = 1, printable = false)
@@ -68,9 +70,9 @@ class VkontaktePlayer
     file_path      = "tmp/#{ file_name }.mp3"
     
     unless downloaded?(file_path, content_length)
-      file         = File.open(file_path, "w+")      
-      sum_chunks   = 0
+      file = File.open(file_path, "w+")      
       puts "Download file '#{ file_name }.mp3' started..."
+      sum_chunks = 0
       @http.get_content(audio['url']) do |chunk|
         file.write(chunk)
         sum_chunks += chunk.size
@@ -132,15 +134,15 @@ class VkontaktePlayer
     download_and_play index
   end
   
-  def show_as_table(audios, options = {})
+  def show_as_table(options = {})
     audios_on_page = options[:count].to_i
     page           = options[:page].to_i
-    pages_count    = (audios.size/audios_on_page).to_i + 1
+    pages_count    = (@audios.size/audios_on_page).to_i + 1
     range          = Range.new(page * audios_on_page - audios_on_page, page * audios_on_page)
-    table          = Terminal::Table.new do |t|
+    table = Terminal::Table.new do |t|
       t.title = "Music(Page: #{options[:page]} of #{pages_count})"
       t.headings = ['#', 'Title', 'Duration']
-      audios.each_with_index do |audio, index|
+      @audios.each_with_index do |audio, index|
         if range.include?(index + 1)         
           t << [ index + 1, "#{ truncate(audio['title']) }", "#{ (audio['duration']/60.0).round(2) }" ] 
         end
@@ -155,6 +157,8 @@ class VkontaktePlayer
     response = @http.get "#{vk_api}audio.search?q=#{query}&auto_complete=1&sort=2&#{@access_token}"
     body     = JSON.parse(response.body)
     @audios  = body["response"]
+    @audios.delete_at(0) # don't need
+    @audios
   end
   
   def to_yaml_properties

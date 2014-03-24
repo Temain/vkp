@@ -31,10 +31,9 @@ command :list do |c|
   c.flag [:count]
   
   c.action do |global_options, options, args|   
-    audios = @player.list_audios
-    audios.delete_at(0) # don't need
+    @player.list_audios
     if options[:table]   
-      @player.show_as_table audios, page: options[:page], count: options[:count]
+      @player.show_as_table page: options[:page], count: options[:count]
     end
   end
   
@@ -74,10 +73,9 @@ command :search do |c|
   
   c.action do |global_options, options, args|
     puts "Search query: '#{args[0]}'"
-    audios = @player.search args[0]
-    audios.delete_at(0) # don't need
+    @player.search args[0]
     if options[:table]   
-      @player.show_as_table audios, page: options[:page], count: options[:count]
+      @player.show_as_table page: options[:page], count: options[:count]
     end
   end
 end

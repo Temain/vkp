@@ -2,7 +2,7 @@
 *.rbc
 config.yml
 /tmp/*.*
-.DS_Store
+.DS_Store*.*
 
 ## Documentation cache and generated files:
 /.yardoc/

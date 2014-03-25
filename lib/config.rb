@@ -11,13 +11,15 @@ module Config
     api       = 'https://api.vk.com/method/'
     client_id = ask("Enter your app id:  ", Integer) 
     user_id   = ask("Enter your user id:  ", Integer) 
-    email     = ask("Enter your email:  ", String) { |q| q.validate = /\A[\w+\-.]+@[a-z\d\-.]+\.[a-z]+\z/i }
-    pass      = ask("Enter your password:  ", String) { |q| q.echo = false }
+    email     = ask("Enter your email:  ") { |q| q.validate = /\A[\w+\-.]+@[a-z\d\-.]+\.[a-z]+\z/i }
+    pass      = ask("Enter your password:  ") { |q| q.echo = false }
     @config   = { "api" => api, "user" => { "client" => client_id, "id" => user_id, "email" => email, "pass" => pass } }
     File.open(file_path, 'w') do |file|
       file.write @config.to_yaml
     end
     @config
+  ensure
+    p @config
   end
   
 end

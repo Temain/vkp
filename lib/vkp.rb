@@ -15,10 +15,8 @@ class VkontaktePlayer
     @access_token ||= authorize
   end
   
-  def http=(http)
-    @http = http
-  end
-  
+  attr_writer :http
+ 
   def config     
     @config ||= Config::configure
   end
@@ -29,11 +27,11 @@ class VkontaktePlayer
  #  но в этом случае пользователю уже не придется дважды разрешать доступ. 
  #  Запрашивать access_token также необходимо при смене пользователем логина или пароля
  #  или удалением приложения в настройках доступа. 
-  def authorize(email = nil, pass = nil)
+  def authorize
     email   ||= config['user']['email']
     pass    ||= config['user']['pass']
     client_id = config['client']
-    
+    puts email, pass, client_id
     response = @http.get 'https://oauth.vk.com/authorize', 
             { :client_id     => client_id, 
               :scope         => 'audio',
@@ -45,6 +43,7 @@ class VkontaktePlayer
     # Parse inputs on this form
     page  = Nokogiri::HTML::Document.parse(response.body)
     link  = page.css("form")[0]["action"] + '&'
+    p link
     link += page.css("input[type='hidden']").map { |input| "#{input['name']}=#{input['value']}" }.join('&')
     link += "&email=#{email}&pass=#{pass}"
 

@@ -11,7 +11,7 @@ spec = Gem::Specification.new do |s|
   s.files = `git ls-files`.split("
 ")
   s.require_paths << 'lib'
-  s.has_rdoc = true
+  s.has_rdoc = false
   s.extra_rdoc_files = ['README.rdoc','vkp.rdoc']
   s.rdoc_options << '--title' << 'vkp' << '--main' << 'README.rdoc' << '-ri'
   s.bindir = 'bin'
@@ -23,5 +23,5 @@ spec = Gem::Specification.new do |s|
   s.add_runtime_dependency('nokogiri')
   s.add_runtime_dependency('httpclient')
   s.add_runtime_dependency('terminal-table')
-  s.add_runtime_dependency('timers')
+  s.add_runtime_dependency('highline')  
 end

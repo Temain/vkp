@@ -6,7 +6,7 @@ require 'openssl'
 require 'nokogiri'
 require 'httpclient'
 require 'json'
-require 'timers'
+require 'config'
 
 class VkontaktePlayer
   
@@ -20,14 +20,19 @@ class VkontaktePlayer
   end
   
   def config     
-    file_path = File.expand_path('../../config.yml', __FILE__)
-    @config ||= YAML.load_file(file_path)
+    @config ||= Config::configure
   end
   
+ # Вместе с ключом access_token также будет указано время его жизни expires_in,
+ #  заданное в секундах. Если срок использования ключа истек, 
+ #  то необходимо повторно провести все описанные выше шаги, 
+ #  но в этом случае пользователю уже не придется дважды разрешать доступ. 
+ #  Запрашивать access_token также необходимо при смене пользователем логина или пароля
+ #  или удалением приложения в настройках доступа. 
   def authorize(email = nil, pass = nil)
-    email   ||= config['vk']['user']['email']
-    pass    ||= config['vk']['user']['pass']
-    client_id = config['vk']['client']
+    email   ||= config['user']['email']
+    pass    ||= config['user']['pass']
+    client_id = config['client']
     
     response = @http.get 'https://oauth.vk.com/authorize', 
             { :client_id     => client_id, 
@@ -49,12 +54,13 @@ class VkontaktePlayer
 
     # Get accees_token from last response
     url_with_access_token = grant_access_request.headers['Location']
+    p url_with_access_token
     @access_token         = url_with_access_token[/#.+&/].tr_s('#','').split('&').first
   end
   
   def list_audios
-    vk_api   = config['vk']['api']
-    user_id  = config['vk']['user']['id']
+    vk_api   = config['api']
+    user_id  = config['user']['id']
     response = @http.get "#{vk_api}audio.get?owner_id=#{user_id.to_s}&#{@access_token}"
     body     = JSON.parse(response.body)
     @audios  = body["response"]
@@ -153,8 +159,8 @@ class VkontaktePlayer
   end
   
   def search(query)
-    vk_api   = config['vk']['api']
-    user_id  = config['vk']['user']['id']
+    vk_api   = config['api']
+    user_id  = config['user']['id']
     response = @http.get "#{vk_api}audio.search?q=#{query}&auto_complete=1&sort=2&#{@access_token}"
     body     = JSON.parse(response.body)
     @audios  = body["response"]

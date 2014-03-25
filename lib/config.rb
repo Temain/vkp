@@ -13,7 +13,7 @@ module Config
     user_id   = ask("Enter your user id:  ", Integer) 
     email     = ask("Enter your email:  ") { |q| q.validate = /\A[\w+\-.]+@[a-z\d\-.]+\.[a-z]+\z/i }
     pass      = ask("Enter your password:  ") { |q| q.echo = false }
-    @config   = { "api" => api, "user" => { "client" => client_id, "id" => user_id, "email" => email, "pass" => pass } }
+    @config   = { "api" => api, "client" => client_id, "user" => { "id" => user_id, "email" => email, "pass" => pass } }
     File.open(file_path, 'w') do |file|
       file.write @config.to_yaml
     end

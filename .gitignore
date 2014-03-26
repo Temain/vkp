@@ -1,6 +1,7 @@
 *.gem
 *.rbc
 config.yml
+store.yml
 /tmp/*.*
 .DS_Store*.*
 

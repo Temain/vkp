@@ -1,5 +1,6 @@
 require 'vkp/version.rb'
 require 'yaml'
+require 'uri'
 require 'net/http'
 require 'net/https'
 require 'openssl'	
@@ -12,10 +13,17 @@ class VkontaktePlayer
   
   def initialize
     @http = HTTPClient.new
-    @access_token ||= authorize
+    access_token
   end
   
   attr_writer :http
+ 
+  def access_token
+    if @expires_in == nil || Time.now >= @expires_in 
+      authorize  
+    end
+    @access_token
+  end
  
   def config     
     @config ||= Config::configure
@@ -31,19 +39,17 @@ class VkontaktePlayer
     email   ||= config['user']['email']
     pass    ||= config['user']['pass']
     client_id = config['client']
-    puts email, pass, client_id
-    response = @http.get 'https://oauth.vk.com/authorize', 
+    response  = @http.get 'https://oauth.vk.com/authorize', 
             { :client_id     => client_id, 
               :scope         => 'audio',
     			    :display       => 'wap', 
               :response_type => 'token', 
               :redirect_uri  => 'http://oauth.vk.com/blank.html',
     			    :v             => '5.14' }
-
+       
     # Parse inputs on this form
     page  = Nokogiri::HTML::Document.parse(response.body)
     link  = page.css("form")[0]["action"] + '&'
-    p link
     link += page.css("input[type='hidden']").map { |input| "#{input['name']}=#{input['value']}" }.join('&')
     link += "&email=#{email}&pass=#{pass}"
 
@@ -53,14 +59,16 @@ class VkontaktePlayer
 
     # Get accees_token from last response
     url_with_access_token = grant_access_request.headers['Location']
-    p url_with_access_token
-    @access_token         = url_with_access_token[/#.+&/].tr_s('#','').split('&').first
+    
+    @expires_in   = Time.now + url_with_access_token[/&expires_in=.+&/].tr_s('&','').sub!('expires_in=','').to_i
+    #user_id      = url_with_access_token[/&user_id=.+/].tr_s('&','')
+    @access_token = url_with_access_token[/#.+&/].tr_s('#','').split('&').first
   end
   
   def list_audios
     vk_api   = config['api']
     user_id  = config['user']['id']
-    response = @http.get "#{vk_api}audio.get?owner_id=#{user_id.to_s}&#{@access_token}"
+    response = @http.get "#{vk_api}audio.get?owner_id=#{user_id.to_s}&#{access_token}"
     body     = JSON.parse(response.body)
     @audios  = body["response"]
     @audios.delete_at(0) # don't need
@@ -160,7 +168,7 @@ class VkontaktePlayer
   def search(query)
     vk_api   = config['api']
     user_id  = config['user']['id']
-    response = @http.get "#{vk_api}audio.search?q=#{query}&auto_complete=1&sort=2&#{@access_token}"
+    response = @http.get "#{vk_api}audio.search?q=#{URI.encode(query)}&auto_complete=1&sort=2&#{access_token}"
     body     = JSON.parse(response.body)
     @audios  = body["response"]
     @audios.delete_at(0) # don't need
@@ -168,21 +176,23 @@ class VkontaktePlayer
   end
   
   def to_yaml_properties
-    [:@access_token, :@audios]
+    [:@access_token, :@expires_in, :@audios]
   end
   
   def serialize
     data = self.to_yaml
-    File.open('tmp/store.yml', 'w') do |file|
+    file_path = File.expand_path('../../store.yml', __FILE__) #DRY!--fix this
+    File.open(file_path, 'w') do |file|
       file.write data
     end
   end
   
   def self.deserialize   
-    deserialized = YAML::load(File.read('tmp/store.yml'))
+    file_path = File.expand_path('../../store.yml', __FILE__)
+    deserialized = YAML.load_file(file_path)
     deserialized.http = HTTPClient.new
     deserialized
-  rescue
+  rescue Errno::ENOENT, Psych::SyntaxError # file not found, syntax error
     VkontaktePlayer.new
   end
   

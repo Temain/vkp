@@ -80,7 +80,7 @@ class VkontaktePlayer
   end
   
   def download(index = 1, printable = false)
-    audio          = @audios[index] 
+    audio          = @audios[index - 1] 
     response       = @http.head audio['url']
     content_length = response.header['Content-Length'][0].to_f
     file_name      = audio['title'].strip
@@ -133,14 +133,14 @@ class VkontaktePlayer
     threads.each { |thread| thread.join } 
   end
   
-  def download_and_play(index = 1)
+  def download_and_play(index = 0)
     threads = []
     download_thread = Thread.new {
-      download(index)
+      download(index - 1)
     }
     play_thread = Thread.new {
       sleep(10.0)
-      play(index)
+      play(index - 1)
     }
     threads << download_thread
     threads << play_thread

@@ -43,7 +43,7 @@ end
 desc 'Play audio'
 command :play do |c|
   c.action do |global_options, options, args|
-    @player.download_and_play args[0].to_i - 1
+    @player.download_and_play args[0].to_i
   end
 end
 
@@ -53,7 +53,7 @@ command :download do |c|
   c.switch [:p, :printable]
 
   c.action do |global_options, options, args|
-    @player.download args[0].to_i - 1, options[:printable]
+    @player.download args[0].to_i, options[:printable]
   end
 end
 

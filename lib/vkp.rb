@@ -52,7 +52,7 @@ class VkontaktePlayer
     link  = page.css("form")[0]["action"] + '&'
     link += page.css("input[type='hidden']").map { |input| "#{input['name']}=#{input['value']}" }.join('&')
     link += "&email=#{email}&pass=#{pass}"
-
+    
     response             = @http.post link
     response_redirect    = @http.get response.headers['Location']
     grant_access_request = @http.get response_redirect.headers['Location']
@@ -61,7 +61,11 @@ class VkontaktePlayer
     url_with_access_token = grant_access_request.headers['Location']
     
     @expires_in   = Time.now + url_with_access_token[/&expires_in=.+&/].tr_s('&','').sub!('expires_in=','').to_i
-    #user_id      = url_with_access_token[/&user_id=.+/].tr_s('&','')
+    user_id       = url_with_access_token[/&user_id=.+/].tr_s('&','').sub!('user_id=','').to_i
+    
+    # Save user id
+    @config['user'].merge! "id" => user_id
+    Config::save(@config)
     @access_token = url_with_access_token[/#.+&/].tr_s('#','').split('&').first
   end
   
@@ -107,7 +111,7 @@ class VkontaktePlayer
     print out
   end
   
-  def play(index = 1)
+  def play(index)
     threads   = []
     audio     = @audios[index] 
     duration  = audio['duration']

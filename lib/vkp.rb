@@ -113,7 +113,7 @@ class VkontaktePlayer
   
   def play(index)
     threads   = []
-    audio     = @audios[index] 
+    audio     = @audios[index - 1] 
     duration  = audio['duration']
     file_name = audio['title'].strip
     
@@ -136,11 +136,11 @@ class VkontaktePlayer
   def download_and_play(index = 0)
     threads = []
     download_thread = Thread.new {
-      download(index - 1)
+      download(index)
     }
     play_thread = Thread.new {
       sleep(10.0)
-      play(index - 1)
+      play(index)
     }
     threads << download_thread
     threads << play_thread
